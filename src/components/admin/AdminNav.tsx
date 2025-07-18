@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
   Home,
@@ -15,21 +16,30 @@ import {
   Award,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/admin", label: "儀表板", icon: Home },
-  { href: "/admin/competitions", label: "競賽管理", icon: Trophy },
-  { href: "/admin/groups", label: "隊伍管理", icon: Users },
-  { href: "/admin/participants", label: "參賽者管理", icon: UserCheck },
-  { href: "/admin/judges", label: "評審管理", icon: Award },
-  { href: "/admin/rounds", label: "回合管理", icon: Calendar },
-  { href: "/admin/scoring", label: "評分管理", icon: BarChart3 },
-  { href: "/admin/settings", label: "系統設定", icon: Settings },
-];
-
 export function AdminNav() {
   const pathname = usePathname();
   const params = useParams();
   const locale = params.locale as string;
+  const t = useTranslations();
+
+  const navItems = [
+    { href: "/admin", label: t("admin.dashboard"), icon: Home },
+    {
+      href: "/admin/competitions",
+      label: t("admin.competitions"),
+      icon: Trophy,
+    },
+    { href: "/admin/groups", label: t("admin.groups"), icon: Users },
+    {
+      href: "/admin/participants",
+      label: t("admin.participants"),
+      icon: UserCheck,
+    },
+    { href: "/admin/judges", label: t("admin.judges"), icon: Award },
+    { href: "/admin/rounds", label: t("admin.rounds"), icon: Calendar },
+    { href: "/admin/scoring", label: t("scoring.title"), icon: BarChart3 },
+    { href: "/admin/settings", label: t("admin.settings"), icon: Settings },
+  ];
 
   return (
     <nav className="mt-8">

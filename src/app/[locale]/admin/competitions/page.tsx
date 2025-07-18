@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Eye, Trash2, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import { CompetitionActions } from "@/components/admin/CompetitionActions";
+import { getTranslations } from "next-intl/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,6 +26,7 @@ export default async function CompetitionsPage({
 }) {
   await requireAdminAccess();
   const { locale } = await params;
+  const t = await getTranslations({ locale });
 
   // Fetch competitions from database
   const { data: competitions, error } = await supabase
@@ -52,11 +54,11 @@ export default async function CompetitionsPage({
   const getStatusText = (status: string) => {
     switch (status) {
       case "active":
-        return "進行中";
+        return t("competition.active");
       case "completed":
-        return "已完成";
+        return t("competition.completed");
       case "draft":
-        return "草稿";
+        return t("competition.draft");
       default:
         return status;
     }
@@ -66,13 +68,15 @@ export default async function CompetitionsPage({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">競賽管理</h1>
-          <p className="text-gray-600">管理您的歌唱競賽活動</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("admin.competitions")}
+          </h1>
+          <p className="text-gray-600">{t("competition.description")}</p>
         </div>
         <Link href={`/${locale}/admin/competitions/new`}>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            新增競賽
+            {t("competition.create")}
           </Button>
         </Link>
       </div>
@@ -81,7 +85,9 @@ export default async function CompetitionsPage({
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">總競賽數</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("admin.competitions")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -92,7 +98,9 @@ export default async function CompetitionsPage({
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">進行中</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("competition.active")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -103,7 +111,9 @@ export default async function CompetitionsPage({
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">草稿</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("competition.draft")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
@@ -114,7 +124,9 @@ export default async function CompetitionsPage({
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">已完成</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("competition.completed")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
@@ -128,8 +140,8 @@ export default async function CompetitionsPage({
       {/* Competitions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>競賽列表</CardTitle>
-          <CardDescription>管理所有競賽活動的狀態和設定</CardDescription>
+          <CardTitle>{t("admin.competitions")}</CardTitle>
+          <CardDescription>{t("competition.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           {competitions && competitions.length > 0 ? (
@@ -137,11 +149,21 @@ export default async function CompetitionsPage({
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left p-4 font-medium">競賽名稱</th>
-                    <th className="text-left p-4 font-medium">狀態</th>
-                    <th className="text-left p-4 font-medium">目前回合</th>
-                    <th className="text-left p-4 font-medium">建立時間</th>
-                    <th className="text-left p-4 font-medium">操作</th>
+                    <th className="text-left p-4 font-medium">
+                      {t("competition.name")}
+                    </th>
+                    <th className="text-left p-4 font-medium">
+                      {t("common.status")}
+                    </th>
+                    <th className="text-left p-4 font-medium">
+                      {t("round.title")}
+                    </th>
+                    <th className="text-left p-4 font-medium">
+                      {t("common.created")}
+                    </th>
+                    <th className="text-left p-4 font-medium">
+                      {t("common.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,14 +190,14 @@ export default async function CompetitionsPage({
                       </td>
                       <td className="p-4">
                         <span className="text-sm">
-                          第 {competition.current_round} 回合 / 共{" "}
-                          {competition.total_rounds} 回合
+                          {t("round.title")} {competition.current_round} /{" "}
+                          {competition.total_rounds}
                         </span>
                       </td>
                       <td className="p-4">
                         <span className="text-sm text-gray-600">
                           {new Date(competition.created_at).toLocaleDateString(
-                            "zh-TW"
+                            locale === "zh-TW" ? "zh-TW" : "en-US"
                           )}
                         </span>
                       </td>
@@ -184,14 +206,22 @@ export default async function CompetitionsPage({
                           <Link
                             href={`/${locale}/admin/competitions/${competition.id}`}
                           >
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title={t("common.view")}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link
                             href={`/${locale}/admin/competitions/${competition.id}/edit`}
                           >
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title={t("common.edit")}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -224,15 +254,15 @@ export default async function CompetitionsPage({
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                沒有競賽
+                {t("competition.noCompetitions")}
               </h3>
               <p className="text-gray-600 mb-4">
-                開始建立您的第一個歌唱競賽吧！
+                {t("competition.createFirst")}
               </p>
               <Link href={`/${locale}/admin/competitions/new`}>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  新增競賽
+                  {t("competition.create")}
                 </Button>
               </Link>
             </div>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Trophy, Users, Award, BarChart3, Plus } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { getTranslations } from "next-intl/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,6 +30,9 @@ export default async function AdminDashboard({
   if (!userId) {
     redirect(`/${locale}/sign-in`);
   }
+
+  // Get translations with locale
+  const t = await getTranslations({ locale });
 
   // Fetch real data from database with error handling
   let competitions: any[] = [];
@@ -77,17 +81,33 @@ export default async function AdminDashboard({
   const currentRound = activeCompetition?.current_round || 1;
   const totalRounds = activeCompetition?.total_rounds || 2;
 
+  // Helper function to get status text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active":
+        return t("competition.active");
+      case "draft":
+        return t("competition.draft");
+      case "completed":
+        return t("competition.completed");
+      default:
+        return status;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">管理儀表板</h1>
-          <p className="text-gray-600">管理您的 803 Event 競賽</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("admin.dashboard")}
+          </h1>
+          <p className="text-gray-600">{t("app.description")}</p>
         </div>
         <Link href={`/${locale}/admin/competitions/new`}>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            新增競賽
+            {t("competition.create")}
           </Button>
         </Link>
       </div>
@@ -96,7 +116,9 @@ export default async function AdminDashboard({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">總競賽數</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("admin.competitions")}
+            </CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -104,16 +126,18 @@ export default async function AdminDashboard({
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               {activeCompetitions > 0 && (
                 <Badge variant="outline" className="text-green-600">
-                  {activeCompetitions} 進行中
+                  {activeCompetitions} {t("competition.active")}
                 </Badge>
               )}
               {draftCompetitions > 0 && (
                 <Badge variant="outline" className="text-yellow-600">
-                  {draftCompetitions} 草稿
+                  {draftCompetitions} {t("competition.draft")}
                 </Badge>
               )}
               {totalCompetitions === 0 && (
-                <span className="text-gray-500">尚未建立</span>
+                <span className="text-gray-500">
+                  {t("competition.noCompetitions")}
+                </span>
               )}
             </div>
           </CardContent>
@@ -121,41 +145,51 @@ export default async function AdminDashboard({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">參賽隊伍</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("admin.groups")}
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalGroups}</div>
             <p className="text-xs text-muted-foreground">
-              {totalParticipants} 位參賽者
+              {totalParticipants} {t("admin.participants")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">評審人數</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("admin.judges")}
+            </CardTitle>
             <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalJudges}</div>
             <p className="text-xs text-muted-foreground">
-              {totalJudges > 0 ? "已設定評審" : "尚未設定評審"}
+              {totalJudges > 0 ? t("judge.active") : t("judge.noJudges")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">目前回合</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("round.title")}
+            </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {activeCompetition ? `第 ${currentRound} 回合` : "無進行中競賽"}
+              {activeCompetition
+                ? `${t("round.title")} ${currentRound}`
+                : t("round.noRounds")}
             </div>
             <p className="text-xs text-muted-foreground">
-              {activeCompetition ? `共 ${totalRounds} 回合` : "請先建立競賽"}
+              {activeCompetition
+                ? `${t("competition.totalRounds")}: ${totalRounds}`
+                : t("competition.create")}
             </p>
           </CardContent>
         </Card>
@@ -168,8 +202,10 @@ export default async function AdminDashboard({
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>最近的競賽</CardTitle>
-                <CardDescription>最新建立和更新的競賽活動</CardDescription>
+                <CardTitle>{t("admin.competitions")}</CardTitle>
+                <CardDescription>
+                  {t("competition.description")}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -184,7 +220,9 @@ export default async function AdminDashboard({
                           <div className="text-sm text-gray-600">
                             {new Date(
                               competition.created_at
-                            ).toLocaleDateString("zh-TW")}
+                            ).toLocaleDateString(
+                              locale === "zh-TW" ? "zh-TW" : "en-US"
+                            )}
                           </div>
                         </div>
                       </div>
@@ -198,11 +236,7 @@ export default async function AdminDashboard({
                             : "text-gray-600"
                         }
                       >
-                        {competition.status === "active"
-                          ? "進行中"
-                          : competition.status === "draft"
-                          ? "草稿"
-                          : "已完成"}
+                        {getStatusText(competition.status)}
                       </Badge>
                     </div>
                   ))}
@@ -212,8 +246,8 @@ export default async function AdminDashboard({
 
             <Card>
               <CardHeader>
-                <CardTitle>系統統計</CardTitle>
-                <CardDescription>目前系統使用情況</CardDescription>
+                <CardTitle>{t("admin.dashboard")}</CardTitle>
+                <CardDescription>{t("common.status")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -221,25 +255,33 @@ export default async function AdminDashboard({
                     <div className="text-2xl font-bold text-blue-600">
                       {activeCompetitions}
                     </div>
-                    <div className="text-xs text-gray-600">進行中競賽</div>
+                    <div className="text-xs text-gray-600">
+                      {t("competition.active")}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">
                       {totalGroups}
                     </div>
-                    <div className="text-xs text-gray-600">參賽隊伍</div>
+                    <div className="text-xs text-gray-600">
+                      {t("admin.groups")}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {totalParticipants}
                     </div>
-                    <div className="text-xs text-gray-600">參賽者</div>
+                    <div className="text-xs text-gray-600">
+                      {t("admin.participants")}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
                       {totalJudges}
                     </div>
-                    <div className="text-xs text-gray-600">評審</div>
+                    <div className="text-xs text-gray-600">
+                      {t("admin.judges")}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -249,33 +291,33 @@ export default async function AdminDashboard({
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>快速操作</CardTitle>
-              <CardDescription>常用的管理功能</CardDescription>
+              <CardTitle>{t("common.actions")}</CardTitle>
+              <CardDescription>{t("admin.settings")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                 <Link href={`/${locale}/admin/competitions`}>
                   <Button variant="outline" className="w-full justify-start">
                     <Trophy className="mr-2 h-4 w-4" />
-                    競賽管理
+                    {t("admin.competitions")}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/admin/groups`}>
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="mr-2 h-4 w-4" />
-                    隊伍管理
+                    {t("admin.groups")}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/admin/judges`}>
                   <Button variant="outline" className="w-full justify-start">
                     <Award className="mr-2 h-4 w-4" />
-                    評審管理
+                    {t("admin.judges")}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/admin/scoring`}>
                   <Button variant="outline" className="w-full justify-start">
                     <BarChart3 className="mr-2 h-4 w-4" />
-                    評分管理
+                    {t("scoring.title")}
                   </Button>
                 </Link>
               </div>
@@ -290,16 +332,15 @@ export default async function AdminDashboard({
               <Trophy className="h-16 w-16 mx-auto mb-4" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              開始您的第一個競賽
+              {t("competition.create")}
             </h3>
             <p className="text-gray-600 mb-6 text-center max-w-md">
-              歡迎來到 803 Event
-              管理系統！建立您的第一個歌唱競賽，開始管理參賽隊伍、評審和評分。
+              {t("app.description")}
             </p>
             <Link href={`/${locale}/admin/competitions/new`}>
               <Button size="lg">
                 <Plus className="mr-2 h-5 w-5" />
-                建立第一個競賽
+                {t("competition.create")}
               </Button>
             </Link>
           </CardContent>

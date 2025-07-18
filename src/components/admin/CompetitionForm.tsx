@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   createCompetition,
   updateCompetition,
@@ -48,6 +49,7 @@ interface CompetitionFormProps {
 export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations();
   const [formData, setFormData] = useState<Competition>({
     name: competition?.name || "",
     name_en: competition?.name_en || "",
@@ -100,19 +102,19 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
       {/* Basic Information */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="name">競賽名稱 (中文) *</Label>
+          <Label htmlFor="name">{t("competition.name")} (中文) *</Label>
           <Input
             id="name"
             name="name"
             value={formData.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            placeholder="例如：803 Event 2024"
+            placeholder={t("competition.namePlaceholder")}
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="name_en">競賽名稱 (英文)</Label>
+          <Label htmlFor="name_en">{t("competition.name")} (English)</Label>
           <Input
             id="name_en"
             name="name_en"
@@ -124,13 +126,13 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">競賽描述</Label>
+        <Label htmlFor="description">{t("common.description")}</Label>
         <Textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={(e) => handleChange("description", e.target.value)}
-          placeholder="描述這個競賽的特色和規則..."
+          placeholder={t("competition.descriptionPlaceholder")}
           rows={3}
         />
       </div>
@@ -139,29 +141,35 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
 
       {/* Competition Settings */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">競賽設定</h3>
+        <h3 className="text-lg font-medium">{t("competition.settings")}</h3>
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="status">競賽狀態</Label>
+            <Label htmlFor="status">{t("common.status")}</Label>
             <Select
               name="status"
               value={formData.status}
               onValueChange={(value: string) => handleChange("status", value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="選擇狀態" />
+                <SelectValue placeholder={t("competition.selectStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">草稿</SelectItem>
-                <SelectItem value="active">進行中</SelectItem>
-                <SelectItem value="completed">已完成</SelectItem>
+                <SelectItem value="draft">{t("competition.draft")}</SelectItem>
+                <SelectItem value="active">
+                  {t("competition.active")}
+                </SelectItem>
+                <SelectItem value="completed">
+                  {t("competition.completed")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="current_round">目前回合</Label>
+            <Label htmlFor="current_round">
+              {t("competition.currentRound")}
+            </Label>
             <Input
               id="current_round"
               name="current_round"
@@ -176,7 +184,7 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="total_rounds">總回合數</Label>
+            <Label htmlFor="total_rounds">{t("competition.totalRounds")}</Label>
             <Input
               id="total_rounds"
               name="total_rounds"
@@ -196,7 +204,7 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
 
       {/* Voting Settings */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">投票設定</h3>
+        <h3 className="text-lg font-medium">{t("voting.settings")}</h3>
 
         <div className="flex items-center space-x-2">
           <Switch
@@ -207,11 +215,13 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
               handleChange("voting_enabled", checked)
             }
           />
-          <Label htmlFor="voting_enabled">啟用公眾投票</Label>
+          <Label htmlFor="voting_enabled">
+            {t("competition.votingEnabled")}
+          </Label>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="display_mode">顯示模式</Label>
+          <Label htmlFor="display_mode">{t("competition.displayMode")}</Label>
           <Select
             name="display_mode"
             value={formData.display_mode}
@@ -220,12 +230,18 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="選擇顯示模式" />
+              <SelectValue placeholder={t("competition.selectDisplayMode")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="individual_scores">個別評分</SelectItem>
-              <SelectItem value="total_scores">總分顯示</SelectItem>
-              <SelectItem value="ranking_only">僅顯示排名</SelectItem>
+              <SelectItem value="individual_scores">
+                {t("competition.individualScores")}
+              </SelectItem>
+              <SelectItem value="total_scores">
+                {t("competition.totalScores")}
+              </SelectItem>
+              <SelectItem value="ranking_only">
+                {t("competition.rankingOnly")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -235,35 +251,45 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
 
       {/* Default Scoring Factors Preview */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">預設評分項目</h3>
+        <h3 className="text-lg font-medium">{t("scoring.factors")}</h3>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">803 Event 標準評分項目</CardTitle>
-            <CardDescription>
-              建立競賽後將自動建立以下評分項目，您可以在競賽設定中進行調整
-            </CardDescription>
+            <CardTitle className="text-base">
+              {t("scoring.standardFactors")}
+            </CardTitle>
+            <CardDescription>{t("scoring.factorsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2 md:grid-cols-2 text-sm">
               <div className="flex justify-between">
-                <span>創意 (Creativity)</span>
-                <span className="text-gray-600">滿分 10 分</span>
+                <span>{t("scoring.defaultFactors.creativity")}</span>
+                <span className="text-gray-600">
+                  {t("scoring.maxPoints", { points: 10 })}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>默契 (Teamwork)</span>
-                <span className="text-gray-600">滿分 10 分</span>
+                <span>{t("scoring.defaultFactors.teamwork")}</span>
+                <span className="text-gray-600">
+                  {t("scoring.maxPoints", { points: 10 })}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>氣氛 (Atmosphere)</span>
-                <span className="text-gray-600">滿分 10 分</span>
+                <span>{t("scoring.defaultFactors.atmosphere")}</span>
+                <span className="text-gray-600">
+                  {t("scoring.maxPoints", { points: 10 })}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>演繹 (Performance)</span>
-                <span className="text-gray-600">滿分 10 分</span>
+                <span>{t("scoring.defaultFactors.performance")}</span>
+                <span className="text-gray-600">
+                  {t("scoring.maxPoints", { points: 10 })}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>演唱 (Singing)</span>
-                <span className="text-gray-600">滿分 10 分</span>
+                <span>{t("scoring.defaultFactors.vocals")}</span>
+                <span className="text-gray-600">
+                  {t("scoring.maxPoints", { points: 10 })}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -278,18 +304,18 @@ export function CompetitionForm({ locale, competition }: CompetitionFormProps) {
           onClick={() => router.back()}
           disabled={isLoading}
         >
-          取消
+          {t("common.cancel")}
         </Button>
         <Button type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              儲存中...
+              {t("common.saving")}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              {competition ? "更新競賽" : "建立競賽"}
+              {competition ? t("competition.update") : t("competition.create")}
             </>
           )}
         </Button>

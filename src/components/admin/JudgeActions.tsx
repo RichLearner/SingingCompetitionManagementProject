@@ -8,59 +8,67 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Play, Pause, Trash2, Settings } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import {
-  deleteCompetition,
-  updateCompetitionStatus,
-} from "@/lib/actions/competitions";
+import { deleteJudge, toggleJudgeStatus } from "@/lib/actions/judges";
 
-interface Competition {
+interface Judge {
   id: string;
+  competition_id: string;
   name: string;
-  status: string;
-  current_round: number;
-  total_rounds: number;
+  email?: string | null;
+  phone?: string | null;
+  photo_url?: string | null;
+  is_active: boolean;
+  specialization?: string | null;
+  experience_years?: number | null;
 }
 
-interface CompetitionActionsProps {
-  competition: Competition;
+interface JudgeActionsProps {
+  judge: Judge;
+  competitionId: string;
   locale: string;
 }
 
-export function CompetitionActions({
-  competition,
+export function JudgeActions({
+  judge,
+  competitionId,
   locale,
-}: CompetitionActionsProps) {
+}: JudgeActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const t = useTranslations();
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleToggleStatus = async () => {
+    const action = judge.is_active ? "deactivate" : "activate";
+    if (!confirm(t(`judge.${action}Confirm`, { name: judge.name }))) {
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await updateCompetitionStatus(competition.id, newStatus);
+      await toggleJudgeStatus(judge.id, competitionId);
       router.refresh();
     } catch (error) {
-      console.error("Error updating competition status:", error);
+      console.error("Error toggling judge status:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(t("competition.deleteConfirm", { name: competition.name }))) {
+    if (!confirm(t("judge.deleteConfirm", { name: judge.name }))) {
       return;
     }
 
     setIsLoading(true);
     try {
-      await deleteCompetition(competition.id);
+      await deleteJudge(judge.id, competitionId);
       router.refresh();
     } catch (error) {
-      console.error("Error deleting competition:", error);
+      console.error("Error deleting judge:", error);
     } finally {
       setIsLoading(false);
     }
@@ -75,40 +83,34 @@ export function CompetitionActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {competition.status === "draft" && (
-          <DropdownMenuItem onClick={() => handleStatusChange("active")}>
-            <Play className="mr-2 h-4 w-4" />
-            {t("competition.start")}
+        {/* Toggle Active Status */}
+        {judge.is_active ? (
+          <DropdownMenuItem onClick={handleToggleStatus}>
+            <UserX className="mr-2 h-4 w-4" />
+            {t("judge.deactivate")}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={handleToggleStatus}>
+            <UserCheck className="mr-2 h-4 w-4" />
+            {t("judge.activate")}
           </DropdownMenuItem>
         )}
 
-        {competition.status === "active" && (
-          <DropdownMenuItem onClick={() => handleStatusChange("completed")}>
-            <Pause className="mr-2 h-4 w-4" />
-            {t("competition.end")}
-          </DropdownMenuItem>
-        )}
-
-        {competition.status === "completed" && (
-          <DropdownMenuItem onClick={() => handleStatusChange("active")}>
-            <Play className="mr-2 h-4 w-4" />
-            {t("competition.restart")}
-          </DropdownMenuItem>
-        )}
-
+        {/* Edit Judge */}
         <DropdownMenuItem
           onClick={() =>
             router.push(
-              `/${locale}/admin/competitions/${competition.id}/settings`
+              `/${locale}/admin/competitions/${competitionId}/judges/${judge.id}/edit`
             )
           }
         >
-          <Settings className="mr-2 h-4 w-4" />
-          {t("admin.settings")}
+          <Edit className="mr-2 h-4 w-4" />
+          {t("common.edit")}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
+        {/* Delete Judge */}
         <DropdownMenuItem
           onClick={handleDelete}
           className="text-red-600 focus:text-red-600"

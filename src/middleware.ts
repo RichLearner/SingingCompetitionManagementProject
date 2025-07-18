@@ -1,6 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import createIntlMiddleware from "next-intl/middleware";
+import { NextRequest, NextResponse } from "next/server";
 
+// Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
   "/",
   "/zh-TW",
@@ -19,37 +21,37 @@ const isPublicRoute = createRouteMatcher([
   "/en/sign-up(.*)",
 ]);
 
+// Define admin routes that require authentication
 const isAdminRoute = createRouteMatcher([
   "/zh-TW/admin/(.*)",
   "/en/admin/(.*)",
 ]);
 
+// Define judge routes that require authentication
 const isJudgeRoute = createRouteMatcher([
   "/zh-TW/judge/(.*)",
   "/en/judge/(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  // Handle locale routing
-  const { pathname } = req.nextUrl;
+// Create next-intl middleware
+const intlMiddleware = createIntlMiddleware({
+  locales: ["zh-TW", "en"],
+  defaultLocale: "zh-TW",
+  localePrefix: "always",
+});
 
-  // Check if the pathname is missing a locale
-  const pathnameIsMissingLocale = ["zh-TW", "en"].every(
-    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
-  );
-
-  // Redirect to /zh-TW if locale is missing (except for auth routes)
-  if (
-    pathnameIsMissingLocale &&
-    !pathname.startsWith("/sign-in") &&
-    !pathname.startsWith("/sign-up")
-  ) {
-    return NextResponse.redirect(new URL(`/zh-TW${pathname}`, req.url));
-  }
-
+export default clerkMiddleware(async (auth, req: NextRequest) => {
   // Handle authentication for protected routes
   if (isAdminRoute(req) || isJudgeRoute(req)) {
     await auth.protect();
+  }
+
+  // Apply next-intl middleware for locale handling
+  const intlResponse = intlMiddleware(req);
+
+  // If intl middleware returned a response (redirect), use that
+  if (intlResponse) {
+    return intlResponse;
   }
 
   return NextResponse.next();

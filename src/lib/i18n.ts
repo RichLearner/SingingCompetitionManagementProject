@@ -1,5 +1,10 @@
 import { getRequestConfig } from "next-intl/server";
 
+export const locales = ["zh-TW", "en"] as const;
+export const defaultLocale = "zh-TW" as const;
+
+export type Locale = (typeof locales)[number];
+
 export default getRequestConfig(async ({ locale }) => {
   const currentLocale = locale || defaultLocale;
   return {
@@ -7,8 +12,3 @@ export default getRequestConfig(async ({ locale }) => {
     locale: currentLocale,
   };
 });
-
-export const locales = ["zh-TW", "en"] as const;
-export const defaultLocale = "zh-TW" as const;
-
-export type Locale = (typeof locales)[number];

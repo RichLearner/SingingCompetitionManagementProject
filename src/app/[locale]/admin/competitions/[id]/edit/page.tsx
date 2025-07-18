@@ -5,20 +5,38 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { createClient } from "@supabase/supabase-js";
+import { notFound } from "next/navigation";
 
-export default async function NewCompetitionPage({
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export default async function EditCompetitionPage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }) {
   await requireAdminAccess();
-  const { locale } = await params;
+  const { locale, id } = await params;
   const t = await getTranslations({ locale });
+
+  // Fetch competition data
+  const { data: competition, error } = await supabase
+    .from("competitions")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !competition) {
+    notFound();
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Link href={`/${locale}/admin/competitions`}>
+        <Link href={`/${locale}/admin/competitions/${id}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("common.back")}
@@ -26,9 +44,11 @@ export default async function NewCompetitionPage({
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {t("competition.create")}
+            {t("competition.edit")}
           </h1>
-          <p className="text-gray-600">{t("competition.createDescription")}</p>
+          <p className="text-gray-600">
+            {t("competition.editDescription")} - {competition.name}
+          </p>
         </div>
       </div>
 
@@ -37,7 +57,7 @@ export default async function NewCompetitionPage({
           <CardTitle>{t("competition.basicInfo")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <CompetitionForm locale={locale} />
+          <CompetitionForm locale={locale} competition={competition} />
         </CardContent>
       </Card>
     </div>
