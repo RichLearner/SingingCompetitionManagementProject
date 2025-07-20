@@ -1,30 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  Trophy,
-  Clock,
-  Users,
-  Star,
-  CheckCircle,
-  XCircle,
-  History,
-  Save,
-  BarChart3,
-} from "lucide-react";
+import { ArrowLeft, Users, Star, Save } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@supabase/supabase-js";
 import { currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
+import { BatchScoreForm } from "@/components/judge/BatchScoreForm";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function JudgeCompetitionPage({
+export default async function BatchScoringPage({
   params,
 }: {
   params: Promise<{ locale: string; id: string }>;
@@ -48,8 +38,7 @@ export default async function JudgeCompetitionPage({
         name,
         status,
         current_round,
-        total_rounds,
-        created_at
+        total_rounds
       )
     `
     )
@@ -72,6 +61,23 @@ export default async function JudgeCompetitionPage({
     .eq("round_number", competition.current_round)
     .single();
 
+  if (!currentRound) {
+    notFound();
+  }
+
+  // Fetch groups (only non-eliminated ones)
+  const { data: groups } = await supabase
+    .from("groups")
+    .select(
+      `
+      *,
+      participants:participants(*)
+    `
+    )
+    .eq("competition_id", id)
+    .eq("is_eliminated", false)
+    .order("name", { ascending: true });
+
   // Fetch scoring factors
   const { data: scoringFactors } = await supabase
     .from("scoring_factors")
@@ -80,23 +86,29 @@ export default async function JudgeCompetitionPage({
     .eq("is_active", true)
     .order("order_index", { ascending: true });
 
-  // Fetch groups (only non-eliminated ones)
-  const { data: groups } = await supabase
-    .from("groups")
-    .select("*")
-    .eq("competition_id", id)
-    .eq("is_eliminated", false)
-    .order("name", { ascending: true });
-
   // Fetch existing scores for this judge in current round
   const { data: existingScores } = await supabase
     .from("judge_scores")
     .select("*")
     .eq("judge_id", judgeAssignment.id)
-    .eq("round_id", currentRound?.id || "")
+    .eq("round_id", currentRound.id)
     .order("created_at", { ascending: true });
 
-  // Calculate scoring progress
+  // Group existing scores by group_id and factor_id for easy lookup
+  const scoresByGroupAndFactor =
+    existingScores?.reduce((acc, score) => {
+      if (!acc[score.group_id]) {
+        acc[score.group_id] = {};
+      }
+      acc[score.group_id][score.factor_id] = {
+        factor_id: score.factor_id,
+        score: score.score,
+        comments: score.comments,
+      };
+      return acc;
+    }, {} as Record<string, Record<string, any>>) || {};
+
+  // Calculate overall progress
   const totalRequiredScores =
     (groups?.length || 0) * (scoringFactors?.length || 0);
   const completedScores = existingScores?.length || 0;
@@ -105,23 +117,13 @@ export default async function JudgeCompetitionPage({
       ? Math.round((completedScores / totalRequiredScores) * 100)
       : 0;
 
-  // Group existing scores by group_id for easy lookup
-  const scoresByGroup =
-    existingScores?.reduce((acc, score) => {
-      if (!acc[score.group_id]) {
-        acc[score.group_id] = [];
-      }
-      acc[score.group_id].push(score);
-      return acc;
-    }, {} as Record<string, any[]>) || {};
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <Link href={`/${locale}/judge`}>
+            <Link href={`/${locale}/judge/competitions/${id}`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("common.back")}
@@ -129,38 +131,17 @@ export default async function JudgeCompetitionPage({
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {competition.name}
+                {t("judge.batchScoring")}
               </h1>
               <p className="text-gray-600 mt-2">
-                {t("judge.round")} {competition.current_round} {t("judge.of")}{" "}
-                {competition.total_rounds}
+                {competition.name} - {t("judge.round")}{" "}
+                {competition.current_round}
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Link href={`/${locale}/judge/competitions/${id}/batch-scoring`}>
-              <Button variant="outline" size="sm">
-                <Save className="mr-2 h-4 w-4" />
-                {t("judge.batchScoring")}
-              </Button>
-            </Link>
-            <Link href={`/${locale}/judge/competitions/${id}/comparison`}>
-              <Button variant="outline" size="sm">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                {t("judge.scoreComparison")}
-              </Button>
-            </Link>
-            <Link href={`/${locale}/judge/competitions/${id}/history`}>
-              <Button variant="outline" size="sm">
-                <History className="mr-2 h-4 w-4" />
-                {t("judge.history")}
-              </Button>
-            </Link>
-          </div>
-          <Badge
-            variant={competition.status === "active" ? "default" : "secondary"}
-          >
-            {t(`competition.${competition.status}`)}
+          <Badge variant="outline">
+            <Save className="mr-2 h-4 w-4" />
+            {t("judge.batchMode")}
           </Badge>
         </div>
 
@@ -176,7 +157,7 @@ export default async function JudgeCompetitionPage({
             <CardContent>
               <div className="text-2xl font-bold">{groups?.length || 0}</div>
               <p className="text-xs text-muted-foreground">
-                {t("judge.totalGroupsDescription")}
+                {t("judge.groupsToScore")}
               </p>
             </CardContent>
           </Card>
@@ -193,7 +174,7 @@ export default async function JudgeCompetitionPage({
                 {scoringFactors?.length || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                {t("judge.scoringFactorsDescription")}
+                {t("judge.factorsPerGroup")}
               </p>
             </CardContent>
           </Card>
@@ -203,7 +184,7 @@ export default async function JudgeCompetitionPage({
               <CardTitle className="text-sm font-medium">
                 {t("judge.progress")}
               </CardTitle>
-              <Trophy className="h-4 w-4 text-purple-600" />
+              <Save className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
@@ -221,7 +202,7 @@ export default async function JudgeCompetitionPage({
               <CardTitle className="text-sm font-medium">
                 {t("judge.roundStatus")}
               </CardTitle>
-              <Clock className="h-4 w-4 text-green-600" />
+              <Badge className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
@@ -236,81 +217,33 @@ export default async function JudgeCompetitionPage({
           </Card>
         </div>
 
-        {/* Groups to Score */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {t("judge.groupsToScore")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {groups && groups.length > 0 ? (
-              <div className="space-y-4">
-                {groups.map((group) => {
-                  const groupScores = scoresByGroup[group.id] || [];
-                  const factorCount = scoringFactors?.length || 0;
-                  const isCompleted = groupScores.length >= factorCount;
-                  const completedFactors = groupScores.length;
-
-                  return (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                          {group.photo_url ? (
-                            <img
-                              src={group.photo_url}
-                              alt={group.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          ) : (
-                            <Users className="h-6 w-6 text-gray-600" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-lg">
-                            {group.name}
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <span>
-                              {completedFactors} {t("judge.of")} {factorCount}{" "}
-                              {t("judge.factorsScored")}
-                            </span>
-                            {isCompleted && (
-                              <>
-                                <span>•</span>
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-green-600">
-                                  {t("judge.completed")}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={isCompleted ? "default" : "secondary"}>
-                          {isCompleted
-                            ? t("judge.completed")
-                            : t("judge.pending")}
-                        </Badge>
-                        <Button asChild>
-                          <Link
-                            href={`/${locale}/judge/competitions/${id}/groups/${group.id}`}
-                          >
-                            {isCompleted
-                              ? t("judge.reviewScores")
-                              : t("judge.scoreGroup")}
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
+        {/* Batch Scoring Form */}
+        {groups &&
+        groups.length > 0 &&
+        scoringFactors &&
+        scoringFactors.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Save className="h-5 w-5" />
+                <span>{t("judge.batchScoringForm")}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BatchScoreForm
+                competitionId={id}
+                roundId={currentRound.id}
+                judgeId={judgeAssignment.id}
+                groups={groups}
+                scoringFactors={scoringFactors}
+                existingScores={scoresByGroupAndFactor}
+                locale={locale}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent>
               <div className="text-center py-8 text-gray-500">
                 <Users className="mx-auto h-12 w-12 mb-4" />
                 <p>{t("judge.noGroupsToScore")}</p>
@@ -318,9 +251,9 @@ export default async function JudgeCompetitionPage({
                   {t("judge.noGroupsToScoreDescription")}
                 </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ export function ParticipantActions({
           <DropdownMenuItem
             onClick={() =>
               router.push(
-                `/${locale}/admin/competitions/${competitionId}/participants/${participant.id}/assign-group`
+                `/${locale}/admin/competitions/${competitionId}/participants/${participant.id}/edit`
               )
             }
           >

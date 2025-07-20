@@ -36,18 +36,12 @@ export default async function GlobalGroupsPage({
   // Fetch all groups with competition and participant data
   const { data: groups, error } = await supabase
     .from("groups")
-    .select(
-      `
-      *,
-      competition:competitions(id, name, status),
-      participants:participants(id, name),
-      leader:participants!groups_leader_id_fkey(id, name)
-    `
-    )
+    .select("*")
     .order("created_at", { ascending: false });
-
   if (error) {
     console.error("Error fetching groups:", error);
+  } else {
+    console.log("Fetched groups:", groups);
   }
 
   // Fetch competitions for filter dropdown
@@ -263,12 +257,18 @@ export default async function GlobalGroupsPage({
                           {group.participants?.length || 0}{" "}
                           {t("group.participants")}
                         </span>
-                        {group.leader && (
+                        {group.leader_id && (
                           <>
                             <span>•</span>
                             <span className="flex items-center space-x-1">
                               <Crown className="h-3 w-3 text-yellow-600" />
-                              <span>{group.leader.name}</span>
+                              <span>
+                                {
+                                  group.participants?.find(
+                                    (p: any) => p.id === group.leader_id
+                                  )?.name
+                                }
+                              </span>
                             </span>
                           </>
                         )}

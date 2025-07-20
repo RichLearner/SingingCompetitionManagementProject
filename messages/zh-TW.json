@@ -52,6 +52,17 @@
   "judge": {
     "dashboard": "評審儀表板",
     "welcomeMessage": "歡迎，{name}！",
+    "login": "評審登入",
+    "loginDescription": "輸入您的憑證以存取評分系統",
+    "enterCredentials": "輸入您的憑證",
+    "name": "評審姓名",
+    "namePlaceholder": "輸入評審姓名",
+    "password": "密碼",
+    "passwordPlaceholder": "輸入密碼",
+    "loggingIn": "登入中...",
+    "loginFailed": "登入失敗。請檢查您的憑證。",
+    "logout": "登出",
+    "contactAdmin": "如需存取權限，請聯絡管理員",
     "judge": "評審",
     "signInRequired": "請登入以存取評審入口。",
     "totalAssignments": "總分配",
@@ -103,7 +114,43 @@
     "invalidScore": "無效分數。必須介於 {min} 和 {max} 之間",
     "scoresSubmitted": "分數已成功提交！",
     "submitError": "提交分數失敗。請重試。",
-    "submitScores": "提交分數"
+    "submitScores": "提交分數",
+    "scoringHistory": "評分歷史",
+    "historyDescription": "查看您的評分歷史和表現分析",
+    "history": "歷史",
+    "totalScoresSubmitted": "總提交評分",
+    "scoresSubmittedDescription": "您提交的所有評分",
+    "averageScore": "平均評分",
+    "averageScoreDescription": "您在所有評分項目的平均分數",
+    "roundsScored": "已評分回合",
+    "roundsScoredDescription": "您已評分的回合數",
+    "groupsScored": "已評分組別",
+    "groupsScoredDescription": "您已評估的組別數",
+    "roundAnalysis": "回合分析",
+    "noScoringHistory": "未找到評分歷史",
+    "noScoringHistoryDescription": "您尚未提交任何評分",
+    "detailedHistory": "詳細評分歷史",
+    "noScoresFound": "未找到評分",
+    "noScoresFoundDescription": "尚未提交任何評分",
+    "batchProgress": "批次評分進度",
+    "scoringGroup": "評分組別",
+    "currentGroupScore": "目前組別分數",
+    "submitAllScores": "提交所有評分",
+    "allScoresSubmitted": "所有評分已成功提交！",
+    "batchScoring": "批次評分",
+    "batchMode": "批次模式",
+    "batchScoringForm": "批次評分表單",
+    "factorsPerGroup": "每組評分項目",
+    "scoreComparison": "分數比較",
+    "comparisonDescription": "比較各回合和組別的分數",
+    "analytics": "分析",
+    "factorAnalysis": "評分項目分析",
+    "groupRankings": "組別排名",
+    "roundComparison": "回合比較",
+    "group": "組別",
+    "average": "平均",
+    "trend": "趨勢",
+    "rounds": "回合"
   },
   "app": {
     "title": "803 活動",
@@ -130,7 +177,7 @@
     "groups": "組別",
     "participants": "參賽者",
     "judges": "評審",
-    "scoringFactors": "評分項目",
+    "scoring": "評分",
     "results": "結果",
     "settings": "設定",
     "superAdmin": "超級管理員"
@@ -184,7 +231,8 @@
     "individualScores": "個別評分",
     "totalScores": "總分顯示",
     "rankingOnly": "僅顯示排名",
-    "update": "更新競賽"
+    "update": "更新競賽",
+    "selectCompetition": "選擇比賽"
   },
   "round": {
     "title": "回合",
@@ -354,6 +402,8 @@
     "create": "建立評審",
     "edit": "編輯評審",
     "name": "評審姓名",
+    "password": "密碼",
+    "passwordPlaceholder": "輸入密碼",
     "active": "啟用",
     "inactive": "停用",
     "noJudges": "目前沒有評審",
@@ -471,7 +521,9 @@
     "viewCompetitions": "查看比賽",
     "manageJudges": "管理評審",
     "viewGroups": "查看組別",
-    "viewRounds": "查看輪次"
+    "viewRounds": "查看輪次",
+    "activeJudges": "活躍評審",
+    "activeJudgesDescription": "目前正在評分"
   },
   "voting": {
     "title": "投票",
@@ -591,5 +643,15 @@
     "framework": "框架",
     "database": "資料庫",
     "authentication": "驗證"
+  },
+  "rounds": {
+    "title": "回合",
+    "round": "回合",
+    "completedRounds": "已完成回合",
+    "completedRoundsDescription": "已結束的回合",
+    "activeRounds": "進行中回合",
+    "activeRoundsDescription": "目前進行中的回合",
+    "pendingRounds": "待開始回合",
+    "pendingRoundsDescription": "尚未開始的回合"
   }
 }

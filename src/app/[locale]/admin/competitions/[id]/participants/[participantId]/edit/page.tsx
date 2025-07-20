@@ -39,23 +39,14 @@ export default async function EditParticipantPage({
     notFound();
   }
 
-  // Verify participant belongs to a group that belongs to the competition
-  if (participant.group_id) {
-    const { data: group } = await supabase
-      .from("groups")
-      .select("competition_id")
-      .eq("id", participant.group_id)
-      .single();
-
-    if (!group || group.competition_id !== id) {
-      notFound();
-    }
-  }
+  // Note: We don't validate that the participant's group belongs to this competition
+  // because participants can be moved between competitions and groups
+  // The participant form will handle group assignment validation
 
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Link href={`/${locale}/admin/competitions/${id}`}>
+        <Link href={`/${locale}/admin/competitions/${id}/participants`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("common.back")}

@@ -63,15 +63,26 @@ ALTER TABLE groups
 ADD CONSTRAINT fk_groups_leader 
 FOREIGN KEY (leader_id) REFERENCES participants(id);
 
--- Judges table
+-- Judges table (Simplified for password authentication)
 CREATE TABLE judges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   competition_id UUID REFERENCES competitions(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
-  clerk_user_id VARCHAR(255),
+  password_hash VARCHAR(255) NOT NULL,
+  photo_url TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(competition_id, clerk_user_id)
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(competition_id, name)
+);
+
+-- Judge sessions table for authentication
+CREATE TABLE judge_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token VARCHAR(255) UNIQUE NOT NULL,
+  judge_id UUID REFERENCES judges(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Scoring factors table (Admin configurable)

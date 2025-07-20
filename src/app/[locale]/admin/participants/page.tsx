@@ -36,21 +36,12 @@ export default async function GlobalParticipantsPage({
   // Fetch all participants with group and competition data
   const { data: participants, error } = await supabase
     .from("participants")
-    .select(
-      `
-      *,
-      group:groups(
-        id, 
-        name, 
-        competition:competitions(id, name, status),
-        leader_id
-      )
-    `
-    )
+    .select("*")
     .order("created_at", { ascending: false });
-
   if (error) {
     console.error("Error fetching participants:", error);
+  } else {
+    console.log("Fetched participants:", participants);
   }
 
   // Fetch competitions for filter dropdown

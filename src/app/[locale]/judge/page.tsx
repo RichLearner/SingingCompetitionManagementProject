@@ -1,12 +1,19 @@
-import { requireAdminAccess } from "@/lib/admin-auth";
+import { requireJudgeAccess } from "@/lib/actions/judge-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Clock, Play, CheckCircle, Users, Award } from "lucide-react";
+import {
+  Trophy,
+  Clock,
+  Play,
+  CheckCircle,
+  Users,
+  Award,
+  LogOut,
+} from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@supabase/supabase-js";
-import { currentUser } from "@clerk/nextjs/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,25 +25,9 @@ export default async function JudgeDashboard({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const user = await currentUser();
+  const judge = await requireJudgeAccess();
   const { locale } = await params;
   const t = await getTranslations({ locale });
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">
-            {t("auth.signInRequired")}
-          </h1>
-          <p className="text-gray-600 mb-6">{t("judge.signInRequired")}</p>
-          <Button asChild>
-            <Link href="/sign-in">{t("auth.signIn")}</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // Fetch judge assignments
   const { data: judgeAssignments, error } = await supabase
@@ -54,7 +45,7 @@ export default async function JudgeDashboard({
       )
     `
     )
-    .eq("clerk_user_id", user.id)
+    .eq("id", judge.id)
     .eq("is_active", true);
 
   if (error) {
@@ -82,15 +73,23 @@ export default async function JudgeDashboard({
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t("judge.dashboard")}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {t("judge.welcomeMessage", {
-              name: user.firstName || user.username || t("judge.judge"),
-            })}
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {t("judge.dashboard")}
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {t("judge.welcomeMessage", {
+                name: judge.name || t("judge.judge"),
+              })}
+            </p>
+          </div>
+          <form action="/api/judge/logout" method="POST">
+            <Button variant="outline" type="submit">
+              <LogOut className="mr-2 h-4 w-4" />
+              {t("judge.logout")}
+            </Button>
+          </form>
         </div>
 
         {/* Statistics */}

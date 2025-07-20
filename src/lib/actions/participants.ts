@@ -29,23 +29,50 @@ export async function createParticipant(
     group_id: (formData.get("group_id") as string) || null,
   };
 
+  console.log("Form data received:", {
+    name: data.name,
+    photo_url: data.photo_url,
+    group_id: data.group_id,
+    competitionId: competitionId,
+  });
+
   // Validate required fields
   if (!data.name) {
     throw new Error("參賽者姓名為必填項目");
   }
 
   // If group_id is provided, verify it belongs to the competition
-  if (data.group_id) {
-    const { data: group } = await supabase
+  if (data.group_id && data.group_id.trim() !== "") {
+    console.log(
+      "Validating group_id:",
+      data.group_id,
+      "for competition:",
+      competitionId
+    );
+
+    const { data: group, error: groupError } = await supabase
       .from("groups")
-      .select("id")
+      .select("id, name, competition_id")
       .eq("id", data.group_id)
       .eq("competition_id", competitionId)
       .single();
 
-    if (!group) {
-      throw new Error("無效的組別ID");
+    if (groupError) {
+      console.error("Group validation error:", groupError);
+      throw new Error(`組別驗證錯誤: ${groupError.message}`);
     }
+
+    if (!group) {
+      console.error("Group not found:", {
+        group_id: data.group_id,
+        competition_id: competitionId,
+      });
+      throw new Error(`無效的組別ID: ${data.group_id}`);
+    }
+
+    console.log("Group validation successful:", group);
+  } else {
+    console.log("No group_id provided, skipping validation");
   }
 
   try {
@@ -89,23 +116,51 @@ export async function updateParticipant(
     group_id: (formData.get("group_id") as string) || null,
   };
 
+  console.log("Update form data received:", {
+    name: data.name,
+    photo_url: data.photo_url,
+    group_id: data.group_id,
+    competitionId: competitionId,
+    participantId: participantId,
+  });
+
   // Validate required fields
   if (!data.name) {
     throw new Error("參賽者姓名為必填項目");
   }
 
   // If group_id is provided, verify it belongs to the competition
-  if (data.group_id) {
-    const { data: group } = await supabase
+  if (data.group_id && data.group_id.trim() !== "") {
+    console.log(
+      "Validating group_id:",
+      data.group_id,
+      "for competition:",
+      competitionId
+    );
+
+    const { data: group, error: groupError } = await supabase
       .from("groups")
-      .select("id")
+      .select("id, name, competition_id")
       .eq("id", data.group_id)
       .eq("competition_id", competitionId)
       .single();
 
-    if (!group) {
-      throw new Error("無效的組別ID");
+    if (groupError) {
+      console.error("Group validation error:", groupError);
+      throw new Error(`組別驗證錯誤: ${groupError.message}`);
     }
+
+    if (!group) {
+      console.error("Group not found:", {
+        group_id: data.group_id,
+        competition_id: competitionId,
+      });
+      throw new Error(`無效的組別ID: ${data.group_id}`);
+    }
+
+    console.log("Group validation successful:", group);
+  } else {
+    console.log("No group_id provided, skipping validation");
   }
 
   // Get current participant data for revalidation

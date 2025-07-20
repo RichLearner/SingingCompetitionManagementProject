@@ -99,6 +99,12 @@ export function ParticipantForm({
       const form = e.target as HTMLFormElement;
       const formDataObj = new FormData(form);
 
+      // Handle group_id properly - if it's "none", set it to null
+      const groupId = formDataObj.get("group_id") as string;
+      if (groupId === "none") {
+        formDataObj.set("group_id", "");
+      }
+
       if (participant?.id) {
         // Update existing participant
         await updateParticipant(participant.id, formDataObj, competitionId);

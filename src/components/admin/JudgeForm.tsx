@@ -32,12 +32,9 @@ interface Judge {
   id?: string;
   competition_id: string;
   name: string;
-  email?: string | null;
-  phone?: string | null;
+  password?: string;
   photo_url?: string | null;
   is_active?: boolean;
-  specialization?: string | null;
-  experience_years?: number | null;
 }
 
 interface JudgeFormProps {
@@ -54,12 +51,9 @@ export function JudgeForm({ locale, competitionId, judge }: JudgeFormProps) {
   const [formData, setFormData] = useState<Judge>({
     competition_id: competitionId,
     name: judge?.name || "",
-    email: judge?.email || "",
-    phone: judge?.phone || "",
+    password: "",
     photo_url: judge?.photo_url || "",
     is_active: judge?.is_active ?? true,
-    specialization: judge?.specialization || "",
-    experience_years: judge?.experience_years || null,
     ...judge,
   });
 
@@ -86,7 +80,10 @@ export function JudgeForm({ locale, competitionId, judge }: JudgeFormProps) {
       router.push(`/${locale}/admin/competitions/${competitionId}`);
     } catch (error) {
       console.error("Error saving judge:", error);
-      // TODO: Show error toast or message
+      // Show error message to user
+      const errorMessage =
+        error instanceof Error ? error.message : "發生未知錯誤";
+      alert(errorMessage); // You can replace this with a proper toast notification
     } finally {
       setIsLoading(false);
     }
@@ -128,40 +125,28 @@ export function JudgeForm({ locale, competitionId, judge }: JudgeFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">{t("judge.email")}</Label>
+              <Label htmlFor="password">{t("judge.password")} *</Label>
               <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email || ""}
-                onChange={(e) => handleChange("email", e.target.value)}
-                placeholder={t("judge.emailPlaceholder")}
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password || ""}
+                onChange={(e) => handleChange("password", e.target.value)}
+                placeholder={t("judge.passwordPlaceholder")}
+                required={!judge?.id} // Only required for new judges
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("judge.phone")}</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone || ""}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                placeholder={t("judge.phonePlaceholder")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <FileUpload
-                label={t("judge.photo")}
-                value={formData.photo_url || ""}
-                onChange={(url) => handleChange("photo_url", url)}
-                placeholder={t("judge.photoPlaceholder")}
-                folder="judges"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>{t("judge.photo")}</Label>
+            <FileUpload
+              label={t("judge.photo")}
+              value={formData.photo_url || ""}
+              onChange={(url) => handleChange("photo_url", url)}
+              placeholder={t("judge.photoPlaceholder")}
+              folder="judges"
+            />
           </div>
 
           <div className="flex items-center space-x-2">
@@ -174,58 +159,6 @@ export function JudgeForm({ locale, competitionId, judge }: JudgeFormProps) {
               }
             />
             <Label htmlFor="is_active">{t("judge.active")}</Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Professional Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Award className="mr-2 h-5 w-5" />
-            {t("judge.professionalInfo")}
-          </CardTitle>
-          <CardDescription>
-            {t("judge.professionalInfoDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="specialization">{t("judge.specialization")}</Label>
-            <Input
-              id="specialization"
-              name="specialization"
-              value={formData.specialization || ""}
-              onChange={(e) => handleChange("specialization", e.target.value)}
-              placeholder={t("judge.specializationPlaceholder")}
-            />
-            <p className="text-sm text-gray-600">
-              {t("judge.specializationHint")}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="experience_years">
-              {t("judge.experienceYears")}
-            </Label>
-            <Input
-              id="experience_years"
-              name="experience_years"
-              type="number"
-              min="0"
-              max="50"
-              value={formData.experience_years || ""}
-              onChange={(e) =>
-                handleChange(
-                  "experience_years",
-                  e.target.value ? parseInt(e.target.value) : null
-                )
-              }
-              placeholder={t("judge.experienceYearsPlaceholder")}
-            />
-            <p className="text-sm text-gray-600">
-              {t("judge.experienceYearsHint")}
-            </p>
           </div>
         </CardContent>
       </Card>

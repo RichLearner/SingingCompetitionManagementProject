@@ -54,47 +54,179 @@ export default async function ParticipantsPage({
     .eq("competition_id", id)
     .order("name", { ascending: true });
 
-  // Build query for participants
-  let query = supabase
-    .from("participants")
-    .select(
-      `
-      *,
-      group:groups(id, name, is_eliminated),
-      leader_of:groups!groups_leader_id_fkey(id, name)
-    `
-    )
-    .eq("groups.competition_id", id)
-    .order("name", { ascending: true });
+  // Get all participants with error handling
+  let allParticipants = null;
+  let participantsError = null;
+
+  try {
+    // Use a simple query first, then get group data separately
+    const result = await supabase
+      .from("participants")
+      .select("*")
+      .order("name", { ascending: true });
+
+    allParticipants = result.data;
+    participantsError = result.error;
+
+    // If participants query worked, get group data separately
+    if (!participantsError && allParticipants) {
+      const { data: competitionGroups } = await supabase
+        .from("groups")
+        .select("id, name, is_eliminated, competition_id")
+        .eq("competition_id", id);
+
+      // Merge the data manually
+      allParticipants = allParticipants.map((participant) => ({
+        ...participant,
+        group:
+          competitionGroups?.find((g) => g.id === participant.group_id) || null,
+      }));
+    }
+  } catch (error) {
+    console.error("Caught error in participants query:", error);
+    participantsError = error;
+  }
+
+  if (participantsError) {
+    console.error("Error fetching participants:", participantsError);
+    console.error("Error details:", {
+      message: (participantsError as any).message,
+      details: (participantsError as any).details,
+      hint: (participantsError as any).hint,
+      code: (participantsError as any).code,
+      error: participantsError,
+    });
+
+    // If the table doesn't exist, show a helpful message instead of crashing
+    if ((participantsError as any).code === "42P01") {
+      // Table doesn't exist
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Link href={`/${locale}/admin/competitions/${id}`}>
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {t("common.back")}
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {t("admin.participants")}
+              </h1>
+              <p className="text-gray-600">{competition.name}</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-8">
+              <div className="text-center">
+                <User className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h2 className="text-xl font-semibold mb-2">
+                  Database Setup Required
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  The participants table is not set up in your database. Please
+                  run the database setup script.
+                </p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                  <h3 className="font-semibold text-yellow-800 mb-2">
+                    To fix this:
+                  </h3>
+                  <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1">
+                    <li>Go to your Supabase dashboard</li>
+                    <li>Open the SQL Editor</li>
+                    <li>
+                      Run the script from{" "}
+                      <code className="bg-yellow-100 px-1 rounded">
+                        scripts/check-database.sql
+                      </code>
+                    </li>
+                    <li>Refresh this page</li>
+                  </ol>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // For any other error, show a generic error page
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Link href={`/${locale}/admin/competitions/${id}`}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {t("common.back")}
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {t("admin.participants")}
+            </h1>
+            <p className="text-gray-600">{competition.name}</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <User className="mx-auto h-16 w-16 text-red-400 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Database Error</h2>
+              <p className="text-gray-600 mb-4">
+                There was an error accessing the participants data.
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                <h3 className="font-semibold text-red-800 mb-2">
+                  Error Details:
+                </h3>
+                <pre className="text-sm text-red-700 bg-red-100 p-2 rounded overflow-auto">
+                  {JSON.stringify(participantsError, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show all participants - they can be assigned to groups in this competition
+  let participants = allParticipants || [];
+
+  console.log("Participants data:", {
+    totalParticipants: allParticipants?.length || 0,
+    participantsWithGroups:
+      allParticipants?.filter((p) => p.group_id && p.group).length || 0,
+    participantsWithoutGroups:
+      allParticipants?.filter((p) => !p.group_id || !p.group).length || 0,
+    sampleParticipant: allParticipants?.[0],
+    competitionId: id,
+  });
 
   // Apply search filter
   if (search) {
-    query = query.ilike("name", `%${search}%`);
+    participants = participants.filter((p) =>
+      p.name.toLowerCase().includes(search.toLowerCase())
+    );
   }
 
   // Apply group filter
   if (group === "no-group") {
-    query = query.is("group_id", null);
+    participants = participants.filter((p) => !p.group_id);
   } else if (group) {
-    query = query.eq("group_id", group);
-  }
-
-  const { data: participants, error: participantsError } = await query;
-
-  if (participantsError) {
-    console.error("Error fetching participants:", participantsError);
-    notFound();
+    participants = participants.filter((p) => p.group_id === group);
   }
 
   // Calculate statistics
   const totalParticipants = participants?.length || 0;
   const participantsWithGroups =
-    participants?.filter((p) => p.group_id).length || 0;
+    participants?.filter((p) => p.group_id && p.group).length || 0;
   const participantsWithoutGroups =
-    participants?.filter((p) => !p.group_id).length || 0;
+    participants?.filter((p) => !p.group_id || !p.group).length || 0;
   const groupLeaders =
-    participants?.filter((p) => p.leader_of && p.leader_of.length > 0).length ||
-    0;
+    participants?.filter((p) => p.group?.leader_id === p.id).length || 0;
 
   return (
     <div className="space-y-6">
@@ -263,11 +395,11 @@ export default async function ParticipantsPage({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
-            {t("participant.participantsList")}
+            {t("participant.participantsList")} ({participants.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {participants && participants.length > 0 ? (
+          {participants.length > 0 ? (
             <div className="space-y-4">
               {participants.map((participant) => (
                 <div
@@ -287,28 +419,17 @@ export default async function ParticipantsPage({
                       )}
                     </div>
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <div className="font-medium text-lg">
-                          {participant.name}
-                        </div>
-                        {participant.leader_of &&
-                          participant.leader_of.length > 0 && (
-                            <Crown className="h-4 w-4 text-purple-600" />
-                          )}
+                      <div className="font-medium text-lg">
+                        {participant.name}
                       </div>
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         {participant.group ? (
                           <>
-                            <span>
-                              {t("participant.group")}: {participant.group.name}
-                            </span>
+                            <span>{participant.group.name}</span>
                             {participant.group.is_eliminated && (
-                              <>
-                                <span>•</span>
-                                <span className="text-red-600">
-                                  {t("group.eliminated")}
-                                </span>
-                              </>
+                              <Badge variant="destructive">
+                                {t("group.eliminated")}
+                              </Badge>
                             )}
                           </>
                         ) : (
@@ -316,39 +437,10 @@ export default async function ParticipantsPage({
                             {t("participant.noGroup")}
                           </span>
                         )}
-                        {participant.leader_of &&
-                          participant.leader_of.length > 0 && (
-                            <>
-                              <span>•</span>
-                              <span className="text-purple-600">
-                                {t("participant.leaderOf")}:{" "}
-                                {participant.leader_of
-                                  .map((g) => g.name)
-                                  .join(", ")}
-                              </span>
-                            </>
-                          )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {participant.group ? (
-                      <Badge
-                        variant={
-                          participant.group.is_eliminated
-                            ? "destructive"
-                            : "default"
-                        }
-                      >
-                        {participant.group.is_eliminated
-                          ? t("group.eliminated")
-                          : t("group.qualified")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        {t("participant.unassigned")}
-                      </Badge>
-                    )}
                     <Link
                       href={`/${locale}/admin/competitions/${id}/participants/${participant.id}/edit`}
                     >
@@ -358,8 +450,8 @@ export default async function ParticipantsPage({
                     </Link>
                     <ParticipantActions
                       participant={participant}
-                      competitionId={id}
                       locale={locale}
+                      competitionId={id}
                     />
                   </div>
                 </div>
@@ -368,11 +460,7 @@ export default async function ParticipantsPage({
           ) : (
             <div className="text-center py-8 text-gray-500">
               <User className="mx-auto h-12 w-12 mb-4" />
-              <p>
-                {search
-                  ? t("participant.noParticipantsFound")
-                  : t("participant.noParticipants")}
-              </p>
+              <p>{t("participant.noParticipants")}</p>
               <p className="text-sm">
                 {t("participant.noParticipantsDescription")}
               </p>

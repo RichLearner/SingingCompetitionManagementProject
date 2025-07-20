@@ -13,12 +13,9 @@ const supabase = createClient(
 export interface JudgeFormData {
   competition_id: string;
   name: string;
-  email?: string | null;
-  phone?: string | null;
+  password?: string;
   photo_url?: string | null;
   is_active?: boolean;
-  specialization?: string | null;
-  experience_years?: number | null;
 }
 
 export async function createJudge(formData: FormData) {
@@ -26,58 +23,69 @@ export async function createJudge(formData: FormData) {
   await requireAdminAccess();
 
   const competitionId = formData.get("competition_id") as string;
-  const data: JudgeFormData = {
-    competition_id: competitionId,
-    name: formData.get("name") as string,
-    email: (formData.get("email") as string) || null,
-    phone: (formData.get("phone") as string) || null,
-    photo_url: (formData.get("photo_url") as string) || null,
-    is_active: formData.get("is_active") === "true",
-    specialization: (formData.get("specialization") as string) || null,
-    experience_years: formData.get("experience_years")
-      ? parseInt(formData.get("experience_years") as string)
-      : null,
-  };
+  const name = formData.get("name") as string;
+  const password = formData.get("password") as string;
+  const photoUrl = formData.get("photo_url") as string;
+  const isActive = formData.get("is_active") === "true";
 
   // Validate required fields
-  if (!data.name) {
+  if (!name) {
     throw new Error("評審姓名為必填項目");
   }
 
-  if (!data.competition_id) {
+  if (!password) {
+    throw new Error("密碼為必填項目");
+  }
+
+  if (!competitionId) {
     throw new Error("競賽ID為必填項目");
   }
 
-  // Validate email format if provided
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    throw new Error("電子郵件格式不正確");
+  // Check if judge name already exists for this competition
+  const { data: existingJudge } = await supabase
+    .from("judges")
+    .select("id")
+    .eq("competition_id", competitionId)
+    .eq("name", name)
+    .single();
+
+  if (existingJudge) {
+    throw new Error("該評審姓名在此競賽中已被使用");
   }
 
-  // Check if email already exists for this competition
-  if (data.email) {
-    const { data: existingJudge } = await supabase
-      .from("judges")
-      .select("id")
-      .eq("competition_id", competitionId)
-      .eq("email", data.email)
-      .single();
-
-    if (existingJudge) {
-      throw new Error("該電子郵件已被使用");
-    }
-  }
+  // Hash password
+  const bcrypt = require("bcryptjs");
+  const passwordHash = await bcrypt.hash(password, 10);
 
   try {
     // Insert judge
     const { data: judge, error } = await supabase
       .from("judges")
-      .insert([data])
+      .insert([
+        {
+          competition_id: competitionId,
+          name: name,
+          password_hash: passwordHash,
+          photo_url: photoUrl || null,
+          is_active: isActive,
+        },
+      ])
       .select()
       .single();
 
     if (error) {
       console.error("Error creating judge:", error);
-      throw new Error("建立評審時發生錯誤");
+
+      // Provide more specific error messages
+      if (error.code === "23505") {
+        throw new Error("評審姓名在此競賽中已被使用");
+      } else if (error.code === "23503") {
+        throw new Error("競賽不存在");
+      } else if (error.code === "23514") {
+        throw new Error("資料格式不正確");
+      } else {
+        throw new Error(`建立評審時發生錯誤: ${error.message}`);
+      }
     }
 
     revalidatePath(`/admin/competitions/${competitionId}`);
@@ -85,6 +93,9 @@ export async function createJudge(formData: FormData) {
     return { success: true, judgeId: judge.id };
   } catch (error) {
     console.error("Error creating judge:", error);
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error("建立評審時發生錯誤");
   }
 }
@@ -94,50 +105,46 @@ export async function updateJudge(judgeId: string, formData: FormData) {
   await requireAdminAccess();
 
   const competitionId = formData.get("competition_id") as string;
-  const data: Partial<JudgeFormData> = {
-    name: formData.get("name") as string,
-    email: (formData.get("email") as string) || null,
-    phone: (formData.get("phone") as string) || null,
-    photo_url: (formData.get("photo_url") as string) || null,
-    is_active: formData.get("is_active") === "true",
-    specialization: (formData.get("specialization") as string) || null,
-    experience_years: formData.get("experience_years")
-      ? parseInt(formData.get("experience_years") as string)
-      : null,
-  };
+  const name = formData.get("name") as string;
+  const password = formData.get("password") as string;
+  const photoUrl = formData.get("photo_url") as string;
+  const isActive = formData.get("is_active") === "true";
 
   // Validate required fields
-  if (!data.name) {
+  if (!name) {
     throw new Error("評審姓名為必填項目");
   }
 
-  // Validate email format if provided
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    throw new Error("電子郵件格式不正確");
-  }
+  // Check if name conflicts with other judges (excluding current judge)
+  const { data: existingJudge } = await supabase
+    .from("judges")
+    .select("id")
+    .eq("competition_id", competitionId)
+    .eq("name", name)
+    .neq("id", judgeId)
+    .single();
 
-  // Check if email conflicts with other judges (excluding current judge)
-  if (data.email) {
-    const { data: existingJudge } = await supabase
-      .from("judges")
-      .select("id")
-      .eq("competition_id", competitionId)
-      .eq("email", data.email)
-      .neq("id", judgeId)
-      .single();
-
-    if (existingJudge) {
-      throw new Error("該電子郵件已被使用");
-    }
+  if (existingJudge) {
+    throw new Error("該評審姓名在此競賽中已被使用");
   }
 
   try {
+    const updateData: any = {
+      name: name,
+      photo_url: photoUrl || null,
+      is_active: isActive,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only update password if provided
+    if (password) {
+      const bcrypt = require("bcryptjs");
+      updateData.password_hash = await bcrypt.hash(password, 10);
+    }
+
     const { error } = await supabase
       .from("judges")
-      .update({
-        ...data,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", judgeId);
 
     if (error) {
