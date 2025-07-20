@@ -46,6 +46,11 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     await auth.protect();
   }
 
+  // Skip internationalization for API routes
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   // Apply next-intl middleware for locale handling
   const intlResponse = intlMiddleware(req);
 

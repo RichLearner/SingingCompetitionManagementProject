@@ -133,11 +133,11 @@ export function GroupActions({
           {t("common.edit")}
         </DropdownMenuItem>
 
-        {/* Manage Participants */}
+        {/* Manage Participants - Navigate to edit page where participants can be managed */}
         <DropdownMenuItem
           onClick={() =>
             router.push(
-              `/${locale}/admin/competitions/${group.competition_id}/groups/${group.id}/participants`
+              `/${locale}/admin/competitions/${group.competition_id}/groups/${group.id}/edit`
             )
           }
         >

@@ -53,8 +53,8 @@ export default async function GroupsPage({
     .select(
       `
       *,
-      participants!inner(count),
-      leader:participants!groups_leader_id_fkey(id, name)
+      leader:participants!fk_groups_leader(id, name),
+      participants:participants!participants_group_id_fkey(id)
     `
     )
     .eq("competition_id", id)

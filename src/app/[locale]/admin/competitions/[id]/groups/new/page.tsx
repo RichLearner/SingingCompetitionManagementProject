@@ -36,7 +36,7 @@ export default async function NewGroupPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Link href={`/${locale}/admin/competitions/${id}`}>
+        <Link href={`/${locale}/admin/competitions/${id}/groups`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("common.back")}

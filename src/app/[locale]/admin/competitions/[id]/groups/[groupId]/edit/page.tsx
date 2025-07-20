@@ -1,5 +1,6 @@
 import { requireAdminAccess } from "@/lib/admin-auth";
 import { GroupForm } from "@/components/admin/GroupForm";
+import { GroupParticipantManager } from "@/components/admin/GroupParticipantManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -43,7 +44,7 @@ export default async function EditGroupPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Link href={`/${locale}/admin/competitions/${id}`}>
+        <Link href={`/${locale}/admin/competitions/${id}/groups`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("common.back")}
@@ -59,12 +60,27 @@ export default async function EditGroupPage({
         </div>
       </div>
 
+      {/* Basic Group Information */}
       <Card>
         <CardHeader>
           <CardTitle>{t("group.basicInfo")}</CardTitle>
         </CardHeader>
         <CardContent>
           <GroupForm locale={locale} competitionId={id} group={group} />
+        </CardContent>
+      </Card>
+
+      {/* Participant Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("group.participantManagement")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <GroupParticipantManager
+            groupId={groupId}
+            competitionId={id}
+            locale={locale}
+          />
         </CardContent>
       </Card>
     </div>

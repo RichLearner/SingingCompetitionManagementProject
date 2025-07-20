@@ -90,15 +90,15 @@ export default async function ParticipantsPage({
   if (participantsError) {
     console.error("Error fetching participants:", participantsError);
     console.error("Error details:", {
-      message: (participantsError as any).message,
-      details: (participantsError as any).details,
-      hint: (participantsError as any).hint,
-      code: (participantsError as any).code,
+      message: (participantsError as Error).message,
+      details: (participantsError as { details?: string }).details,
+      hint: (participantsError as { hint?: string }).hint,
+      code: (participantsError as { code?: string }).code,
       error: participantsError,
     });
 
     // If the table doesn't exist, show a helpful message instead of crashing
-    if ((participantsError as any).code === "42P01") {
+    if ((participantsError as { code?: string }).code === "42P01") {
       // Table doesn't exist
       return (
         <div className="space-y-6">

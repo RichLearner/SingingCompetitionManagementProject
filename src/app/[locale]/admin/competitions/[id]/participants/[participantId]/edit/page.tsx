@@ -22,6 +22,8 @@ export default async function EditParticipantPage({
   const { locale, id, participantId } = await params;
   const t = await getTranslations({ locale });
 
+  console.log("EditParticipantPage - Params:", { locale, id, participantId });
+
   // Fetch competition and participant data
   const [
     { data: competition, error: competitionError },
@@ -30,12 +32,34 @@ export default async function EditParticipantPage({
     supabase.from("competitions").select("id, name").eq("id", id).single(),
     supabase
       .from("participants")
-      .select("*, group:groups(id, name, is_eliminated)")
+      .select(
+        "*, group:groups!participants_group_id_fkey(id, name, is_eliminated)"
+      )
       .eq("id", participantId)
       .single(),
   ]);
 
-  if (competitionError || !competition || participantError || !participant) {
+  console.log("Database queries completed:");
+  console.log("Competition:", { data: competition, error: competitionError });
+  console.log("Participant:", { data: participant, error: participantError });
+
+  if (competitionError) {
+    console.error("Competition error:", competitionError);
+    notFound();
+  }
+
+  if (participantError) {
+    console.error("Participant error:", participantError);
+    notFound();
+  }
+
+  if (!competition) {
+    console.error("Competition not found");
+    notFound();
+  }
+
+  if (!participant) {
+    console.error("Participant not found");
     notFound();
   }
 

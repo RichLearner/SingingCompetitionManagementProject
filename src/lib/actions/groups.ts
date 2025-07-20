@@ -24,11 +24,13 @@ export async function createGroup(formData: FormData) {
   await requireAdminAccess();
 
   const competitionId = formData.get("competition_id") as string;
+  const leaderId = formData.get("leader_id") as string;
+
   const data: GroupFormData = {
     competition_id: competitionId,
     name: formData.get("name") as string,
     photo_url: (formData.get("photo_url") as string) || null,
-    leader_id: (formData.get("leader_id") as string) || null,
+    leader_id: leaderId === "none" || leaderId === "" ? null : leaderId,
     is_eliminated: formData.get("is_eliminated") === "true",
     elimination_round: formData.get("elimination_round")
       ? parseInt(formData.get("elimination_round") as string)
@@ -83,10 +85,12 @@ export async function updateGroup(groupId: string, formData: FormData) {
   await requireAdminAccess();
 
   const competitionId = formData.get("competition_id") as string;
+  const leaderId = formData.get("leader_id") as string;
+
   const data: Partial<GroupFormData> = {
     name: formData.get("name") as string,
     photo_url: (formData.get("photo_url") as string) || null,
-    leader_id: (formData.get("leader_id") as string) || null,
+    leader_id: leaderId === "none" || leaderId === "" ? null : leaderId,
     is_eliminated: formData.get("is_eliminated") === "true",
     elimination_round: formData.get("elimination_round")
       ? parseInt(formData.get("elimination_round") as string)

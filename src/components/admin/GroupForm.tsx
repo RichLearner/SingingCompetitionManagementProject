@@ -77,31 +77,14 @@ export function GroupForm({ locale, competitionId, group }: GroupFormProps) {
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const query = supabase
+        // Get all participants - they can be assigned to any group
+        const { data } = await supabase
           .from("participants")
           .select("id, name, group_id")
-          .eq("groups.competition_id", competitionId);
+          .order("name", { ascending: true });
 
-        // If editing, include participants from current group
-        if (group?.id) {
-          const { data } = await supabase
-            .from("participants")
-            .select("id, name, group_id")
-            .or(`group_id.is.null,group_id.eq.${group.id}`);
-
-          if (data) {
-            setAvailableParticipants(data);
-          }
-        } else {
-          // For new groups, show participants without groups
-          const { data } = await supabase
-            .from("participants")
-            .select("id, name, group_id")
-            .is("group_id", null);
-
-          if (data) {
-            setAvailableParticipants(data);
-          }
+        if (data) {
+          setAvailableParticipants(data);
         }
       } catch (error) {
         console.error("Error fetching participants:", error);
@@ -130,7 +113,7 @@ export function GroupForm({ locale, competitionId, group }: GroupFormProps) {
         await createGroup(formDataObj);
       }
 
-      router.push(`/${locale}/admin/competitions/${competitionId}`);
+      router.push(`/${locale}/admin/competitions/${competitionId}/groups`);
     } catch (error) {
       console.error("Error saving group:", error);
       // TODO: Show error toast or message
