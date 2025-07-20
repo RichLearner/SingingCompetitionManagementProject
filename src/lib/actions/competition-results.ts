@@ -76,15 +76,14 @@ export async function calculateRoundResults(
       // Calculate judge scores
       const groupJudgeScores =
         judgeScores?.filter((s) => s.group_id === group.id) || [];
-      const judgeScore = calculateWeightedJudgeScore(groupJudgeScores);
+      const judgeScore = calculateRawTotalScore(groupJudgeScores);
 
       // Calculate public votes
       const groupPublicVotes =
         publicVotes?.filter((v) => v.group_id === group.id).length || 0;
 
-      // Calculate total score (judge score + public votes)
-      // For now, we'll use a simple weighted combination
-      const totalScore = judgeScore + groupPublicVotes * 0.1; // 0.1 points per public vote
+      // Calculate total score (raw judge score + public votes)
+      const totalScore = judgeScore + groupPublicVotes; // 1 point per public vote
 
       results.push({
         groupId: group.id,
@@ -199,6 +198,17 @@ function calculateWeightedJudgeScore(judgeScores: any[]): number {
   return (
     judgeAverages.reduce((sum, avg) => sum + avg, 0) / judgeAverages.length
   );
+}
+
+function calculateRawTotalScore(judgeScores: any[]): number {
+  if (!judgeScores || judgeScores.length === 0) return 0;
+
+  // Simply sum all the raw scores
+  const totalScore = judgeScores.reduce((sum, score) => {
+    return sum + score.score;
+  }, 0);
+
+  return totalScore;
 }
 
 export async function getRoundResults(competitionId: string, roundId: string) {

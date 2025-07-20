@@ -1,8 +1,9 @@
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/navigation";
 
 export default function HomePage() {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -33,10 +34,10 @@ export default function HomePage() {
               {t("voting.title")}
             </Link>
             <Link
-              href="/scoreboard"
+              href={`/led`}
               className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
             >
-              {t("scoreboard.title")}
+              {t("led.title")}
             </Link>
           </div>
         </div>
@@ -72,11 +73,31 @@ export default function HomePage() {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {t("scoreboard.title")}
+              {t("led.title")}
             </h3>
             <p className="text-gray-600 text-sm">
-              {t("results.title")} - {t("scoreboard.finalResults")}
+              {t("led.liveResults")} - {t("led.displaySettings")}
             </p>
+            <div className="mt-4 space-x-2">
+              <Link
+                href={`/${locale}/led`}
+                className="inline-flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {t("led.viewStatic")}
+              </Link>
+              <Link
+                href={`/${locale}/led/realtime`}
+                className="inline-flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                {t("led.viewLive")}
+              </Link>
+              <Link
+                href={`/${locale}/led/settings`}
+                className="inline-flex items-center px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+              >
+                {t("led.displaySettings")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

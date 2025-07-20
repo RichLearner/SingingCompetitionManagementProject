@@ -5,7 +5,7 @@ import { ArrowLeft, Users, Star, Save } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@supabase/supabase-js";
-import { currentUser } from "@clerk/nextjs/server";
+import { requireJudgeAccess } from "@/lib/actions/judge-auth";
 import { notFound } from "next/navigation";
 import { JudgeScoreForm } from "@/components/judge/JudgeScoreForm";
 
@@ -19,13 +19,9 @@ export default async function JudgeGroupScoringPage({
 }: {
   params: Promise<{ locale: string; id: string; groupId: string }>;
 }) {
-  const user = await currentUser();
+  const judge = await requireJudgeAccess();
   const { locale, id, groupId } = await params;
   const t = await getTranslations({ locale });
-
-  if (!user) {
-    notFound();
-  }
 
   // Fetch judge assignment and verify access
   const { data: judgeAssignment, error: judgeError } = await supabase
@@ -42,7 +38,7 @@ export default async function JudgeGroupScoringPage({
       )
     `
     )
-    .eq("clerk_user_id", user.id)
+    .eq("id", judge.id)
     .eq("competition_id", id)
     .eq("is_active", true)
     .single();
@@ -54,7 +50,7 @@ export default async function JudgeGroupScoringPage({
   const competition = judgeAssignment.competition;
 
   // Fetch current round information
-  const { data: currentRound } = await supabase
+  const { data: currentRound, error: roundError } = await supabase
     .from("rounds")
     .select("*")
     .eq("competition_id", id)
@@ -71,7 +67,7 @@ export default async function JudgeGroupScoringPage({
     .select(
       `
       *,
-      participants:participants(*)
+      participants:participants!participants_group_id_fkey(*)
     `
     )
     .eq("id", groupId)

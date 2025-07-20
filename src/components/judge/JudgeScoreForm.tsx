@@ -68,11 +68,17 @@ export function JudgeScoreForm({
   });
 
   const handleScoreChange = (factorId: string, score: number) => {
+    // Convert to whole number and clamp to valid range
+    const wholeNumber = Math.round(score);
+    const maxScore =
+      scoringFactors.find((f) => f.id === factorId)?.max_score || 10;
+    const clampedScore = Math.max(0, Math.min(maxScore, wholeNumber));
+
     setFormData((prev) => ({
       ...prev,
       [factorId]: {
         ...prev[factorId],
-        score: Math.max(0, Math.min(10, score)), // Clamp between 0-10
+        score: clampedScore,
       },
     }));
   };
@@ -95,7 +101,8 @@ export function JudgeScoreForm({
       if (
         !factorData ||
         factorData.score < 0 ||
-        factorData.score > factor.max_score
+        factorData.score > factor.max_score ||
+        !Number.isInteger(factorData.score)
       ) {
         errors.push(
           `${factor.name}: ${t("judge.invalidScore", {
@@ -172,7 +179,7 @@ export function JudgeScoreForm({
             {t("judge.scoreSummary")}
           </h3>
           <Badge variant="outline" className="text-blue-700">
-            {totalScore.toFixed(1)} / {maxPossibleScore.toFixed(1)} (
+            {Math.round(totalScore)} / {Math.round(maxPossibleScore)} (
             {scorePercentage.toFixed(1)}%)
           </Badge>
         </div>
@@ -217,7 +224,7 @@ export function JudgeScoreForm({
                     </div>
                     <div className="text-sm text-gray-600">
                       {t("judge.weightedScore")}:{" "}
-                      {(factorData.score * factor.weight).toFixed(1)}
+                      {Math.round(factorData.score * factor.weight)}
                     </div>
                   </div>
                 </CardTitle>
@@ -237,18 +244,22 @@ export function JudgeScoreForm({
                       </Label>
                       <Input
                         id={`score-${factor.id}`}
-                        type="number"
-                        min="0"
-                        max={factor.max_score}
-                        step="0.1"
-                        value={factorData.score}
-                        onChange={(e) =>
-                          handleScoreChange(
-                            factor.id,
-                            parseFloat(e.target.value) || 0
-                          )
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={
+                          factorData.score === 0
+                            ? ""
+                            : factorData.score.toString()
                         }
-                        className="text-center font-semibold"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          const numValue = parseInt(value) || 0;
+                          handleScoreChange(factor.id, numValue);
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="text-center font-semibold text-lg"
+                        placeholder="0"
                         required
                       />
                     </div>

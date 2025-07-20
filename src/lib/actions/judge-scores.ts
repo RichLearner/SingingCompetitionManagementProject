@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentJudge } from "./judge-auth";
 import { currentUser } from "@clerk/nextjs/server";
 
 const supabase = createClient(
@@ -35,23 +36,23 @@ const batchScoreSchema = z.object({
 
 export async function submitScore(data: z.infer<typeof scoreSchema>) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const judge = await getCurrentJudge();
+    if (!judge) {
       throw new Error("Authentication required");
     }
 
     const validatedData = scoreSchema.parse(data);
 
     // Verify judge has access to this competition
-    const { data: judge, error: judgeError } = await supabase
+    const { data: judgeAssignment, error: judgeError } = await supabase
       .from("judges")
       .select("*")
       .eq("id", validatedData.judgeId)
-      .eq("clerk_user_id", user.id)
+      .eq("id", judge.id)
       .eq("is_active", true)
       .single();
 
-    if (judgeError || !judge) {
+    if (judgeError || !judgeAssignment) {
       throw new Error("Judge not found or access denied");
     }
 
@@ -104,23 +105,23 @@ export async function submitBatchScores(
   data: z.infer<typeof batchScoreSchema>
 ) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const judge = await getCurrentJudge();
+    if (!judge) {
       throw new Error("Authentication required");
     }
 
     const validatedData = batchScoreSchema.parse(data);
 
     // Verify judge has access to this competition
-    const { data: judge, error: judgeError } = await supabase
+    const { data: judgeAssignment, error: judgeError } = await supabase
       .from("judges")
       .select("*")
+      .eq("id", judge.id)
       .eq("competition_id", validatedData.competitionId)
-      .eq("clerk_user_id", user.id)
       .eq("is_active", true)
       .single();
 
-    if (judgeError || !judge) {
+    if (judgeError || !judgeAssignment) {
       throw new Error("Judge not found or access denied");
     }
 
@@ -177,21 +178,21 @@ export async function getJudgeScores(
   groupId?: string
 ) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const judge = await getCurrentJudge();
+    if (!judge) {
       throw new Error("Authentication required");
     }
 
     // Verify judge access
-    const { data: judge, error: judgeError } = await supabase
+    const { data: judgeAssignment, error: judgeError } = await supabase
       .from("judges")
       .select("*")
       .eq("id", judgeId)
-      .eq("clerk_user_id", user.id)
+      .eq("id", judge.id)
       .eq("is_active", true)
       .single();
 
-    if (judgeError || !judge) {
+    if (judgeError || !judgeAssignment) {
       throw new Error("Judge not found or access denied");
     }
 
@@ -228,8 +229,8 @@ export async function getJudgeScores(
 
 export async function deleteScore(scoreId: string) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const judge = await getCurrentJudge();
+    if (!judge) {
       throw new Error("Authentication required");
     }
 
@@ -239,13 +240,13 @@ export async function deleteScore(scoreId: string) {
       .select(
         `
         *,
-        judge:judges!inner(clerk_user_id)
+        judge:judges!inner(id)
       `
       )
       .eq("id", scoreId)
       .single();
 
-    if (scoreError || !score || score.judge.clerk_user_id !== user.id) {
+    if (scoreError || !score || score.judge.id !== judge.id) {
       throw new Error("Score not found or access denied");
     }
 
@@ -287,21 +288,21 @@ export async function getScoringSummary(
   roundId: string
 ) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const judge = await getCurrentJudge();
+    if (!judge) {
       throw new Error("Authentication required");
     }
 
     // Verify judge access
-    const { data: judge, error: judgeError } = await supabase
+    const { data: judgeAssignment, error: judgeError } = await supabase
       .from("judges")
       .select("*")
+      .eq("id", judge.id)
       .eq("competition_id", competitionId)
-      .eq("clerk_user_id", user.id)
       .eq("is_active", true)
       .single();
 
-    if (judgeError || !judge) {
+    if (judgeError || !judgeAssignment) {
       throw new Error("Judge not found or access denied");
     }
 

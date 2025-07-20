@@ -15,6 +15,7 @@ import {
   Edit,
   Trash2,
   Settings,
+  Calculator,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ import {
   endRound,
   updateRoundStatus,
 } from "@/lib/actions/rounds";
+import { calculateRoundResults } from "@/lib/actions/competition-results";
 
 interface Round {
   id: string;
@@ -102,6 +104,24 @@ export function RoundActions({ round, locale }: RoundActionsProps) {
     }
   };
 
+  const handleCalculateResults = async () => {
+    if (!confirm(t("round.calculateResultsConfirm", { name: round.name }))) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await calculateRoundResults(round.competition_id, round.id);
+      router.refresh();
+      alert(t("round.resultsCalculated"));
+    } catch (error) {
+      console.error("Error calculating results:", error);
+      alert(t("round.calculateResultsError"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -124,6 +144,14 @@ export function RoundActions({ round, locale }: RoundActionsProps) {
           <DropdownMenuItem onClick={handleEndRound}>
             <Square className="mr-2 h-4 w-4" />
             {t("round.end")}
+          </DropdownMenuItem>
+        )}
+
+        {/* Calculate Results */}
+        {(round.status === "active" || round.status === "completed") && (
+          <DropdownMenuItem onClick={handleCalculateResults}>
+            <Calculator className="mr-2 h-4 w-4" />
+            {t("round.calculateResults")}
           </DropdownMenuItem>
         )}
 

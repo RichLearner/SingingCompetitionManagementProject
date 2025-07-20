@@ -14,6 +14,8 @@ import {
   BarChart3,
   Calendar,
   Award,
+  Monitor,
+  Calculator,
 } from "lucide-react";
 
 export function AdminNav() {
@@ -38,6 +40,17 @@ export function AdminNav() {
     { href: "/admin/judges", label: t("admin.judges"), icon: Award },
     { href: "/admin/rounds", label: t("admin.rounds"), icon: Calendar },
     { href: "/admin/scoring", label: t("scoring.title"), icon: BarChart3 },
+    {
+      href: "/admin/calculate-results",
+      label: t("round.calculateResults"),
+      icon: Calculator,
+    },
+    {
+      href: "/admin/recalculate-results",
+      label: t("round.recalculateResults"),
+      icon: Calculator,
+    },
+    { href: "/led", label: t("led.title"), icon: Monitor },
     { href: "/admin/settings", label: t("admin.settings"), icon: Settings },
   ];
 
